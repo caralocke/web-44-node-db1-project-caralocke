@@ -24,7 +24,7 @@ router.post('/', checkAccountPayload, (req, res, next) => {
       message: 'success! You have created a new account!', account
     })
   } else {
-    res.status(404).json({ message: 'account not found'})
+    next(err)
   }
 })
 
@@ -37,7 +37,7 @@ router.delete('/:id', (req, res, next) => {
 })
 
 router.use((err, req, res, next) => { // eslint-disable-line
-  // DO YOUR MAGIC
+  res.status(err.status || 500).json({ message: err.message})
 })
 
 module.exports = router;

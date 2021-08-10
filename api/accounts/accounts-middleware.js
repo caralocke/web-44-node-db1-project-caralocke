@@ -1,47 +1,43 @@
 const Accounts = require('./accounts-model')
+const db = require('../../data/db-config')
 
 exports.checkAccountPayload = (req, res, next) => {
-  const account = req.body;
+  const { name, budget } = req.body;
+  const error = { status: 400 }
 
-  if (!account.name || !account.budget) {
+  if (name === undefined || budget === undefined) {
     res.status(400).json({ message: "name and budget are required" })
-  } else if (typeof(account.name) !== "string" ) {
+  } else if (typeof name !== "string" ) {
     res.status(400).json({ message: "name of account must be a string" })
-  } else if (account.name.trim().length < 3 || account.name.trim().length > 100) {
+  } else if (name.trim().length < 3 || name.trim().length > 100) {
     res.status(400).json({ message: "name of account must be between 3 and 100" })
-  } else if (typeof(account.budget) !== "number") {
+  } else if (typeof budget !== "number" || isNaN(budget)) {
     res.status(400).json({ message: "budget of account must be a number" })
-  } else if (account.budget < 0 || account.budget > 1000000) {
+  } else if (budget < 0 || budget > 1000000) {
     res.status(400).json({ message: "budget of account is too large or too small" })
+  } else if (error.message) {
+    next(error)
   } else {
-    req.body.name = req.body.name.trim();
-    next();
+    next()
   }
 }
 
-exports.checkAccountNameUnique = (req, res, next) => {
-  const {name} = req.body;
-
-  if (!name || typeof(name) !== "string") {
-    next();
+exports.checkAccountNameUnique = async (req, res, next) => {
+  try {
+    const existing = await db('accounts').where('name', req.body.name.trim()).first()
+    if(existing) {
+      next({status: 400, message: 'that name is taken'})
+    } else {
+      next()
+    }
+  } catch (err) {
+    next(err)
   }
-
-  accounts.getByName(name) 
-    .then(resp => {
-      if (resp === undefined || resp === null) {
-        next();
-      } else {
-        res.status(400).json({
-          message: "that name is taken"
-        })
-      }
-    }).catch(next);
 }
 
 exports.checkAccountId = async (req, res, next) => {
   try {
   const { id } = req.params
-  console.log(`the id is ${id}`)
   const account = await Accounts.getById(id)
   if (account) {
     req.account = account
